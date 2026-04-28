@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>予定テキスト生成ツール</title>
+<style>
+  body { 
+    font-family: sans-serif; 
+    padding: 20px; 
+    max-width: 600px; 
+    margin: 0 auto;
+  }
+  .controls { 
+    margin-bottom: 15px; 
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+  }
+  input[type="number"], input[type="text"] { 
+    font-size: 16px; 
+    padding: 5px; 
+  }
+  button { 
+    font-size: 16px; 
+    padding: 8px 16px; 
+    cursor: pointer; 
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+  button:hover { background-color: #0056b3; }
+  
+  #dates-container {
+    margin-bottom: 20px; 
+    max-height: 400px; 
+    overflow-y: auto; 
+    border: 1px solid #dee2e6; 
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .day-row { 
+    display: flex; 
+    align-items: center; 
+    padding: 8px 5px; 
+    border-bottom: 1px solid #f1f1f1; 
+  }
+  .day-row:last-child { border-bottom: none; }
+  .day-row:hover { background-color: #f8f9fa; }
+  
+  .day-label { 
+    width: 90px; 
+    font-family: monospace; 
+    font-size: 16px;
+    white-space: pre; /* ←修正：スペースを無視せずにそのまま表示する */
+  }
+  .day-checkbox { 
+    margin-right: 20px; 
+    cursor: pointer;
+  }
+  .status-radios { 
+    display: none;
+  }
+  .status-radios label { 
+    margin-right: 15px; 
+    cursor: pointer; 
+  }
+  
+  textarea { 
+    width: 100%; 
+    height: 250px; 
+    font-family: monospace; 
+    font-size: 16px; 
+    margin-top: 15px; 
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <label><input type="number" id="year" value="2026" style="width: 80px;" onchange="renderDays()"> 年</label>
+    <label><input type="number" id="month" value="5" min="1" max="12" style="width: 60px;" onchange="renderDays()"> 月</label>
+    <br><br>
+    <input type="text" id="name" value="" style="width: 100px;"> の活動参加予定
+  </div>
+
+  <div id="dates-container"></div>
+
+  <div class="actions">
+    <button onclick="generate()">テキスト作成 👇</button>
+    <button onclick="copyText()" style="background-color: #28a745;">クリップボードにコピー</button>
+  </div>
+  
+  <textarea id="output" placeholder="ここに生成されたテキストが表示されます"></textarea>
+
+  <script>
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+    function renderDays() {
+      const y = parseInt(document.getElementById('year').value);
+      const m = parseInt(document.getElementById('month').value);
+      const container = document.getElementById('dates-container');
+      container.innerHTML = '';
+
+      const date = new Date(y, m - 1, 1);
+      
+      while (date.getMonth() === m - 1) {
+        const d = date.getDate();
+        const w = weekdays[date.getDay()];
+        const dayStr = d.toString().padStart(2, ' ');
+
+        const row = document.createElement('div');
+        row.className = 'day-row';
+
+        const label = document.createElement('div');
+        label.className = 'day-label';
+        label.innerText = `${dayStr}（${w}）`;
+
+        const cbWrapper = document.createElement('label');
+        cbWrapper.className = 'day-checkbox';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = `cb-${d}`;
+        cb.onchange = (e) => {
+          document.getElementById(`radios-${d}`).style.display = e.target.checked ? 'block' : 'none';
+        };
+        cbWrapper.appendChild(cb);
+        cbWrapper.appendChild(document.createTextNode(' 活動日'));
+
+        const radios = document.createElement('div');
+        radios.className = 'status-radios';
+        radios.id = `radios-${d}`;
+        ['⭕', '❌', '遅刻', '早退'].forEach((status, idx) => {
+          const rLabel = document.createElement('label');
+          const r = document.createElement('input');
+          r.type = 'radio';
+          r.name = `status-${d}`;
+          r.value = status;
+          if (idx === 0) r.checked = true;
+          rLabel.appendChild(r);
+          rLabel.appendChild(document.createTextNode(status));
+          radios.appendChild(rLabel);
+        });
+
+        row.appendChild(label);
+        row.appendChild(cbWrapper);
+        row.appendChild(radios);
+        container.appendChild(row);
+
+        date.setDate(d + 1);
+      }
+    }
+
+    function generate() {
+      const y = parseInt(document.getElementById('year').value);
+      const m = parseInt(document.getElementById('month').value);
+      const name = document.getElementById('name').value;
+      let result = `活動参加予定（${name},${m}月）\n\n`; // コハクさんの変更を反映
+
+      const container = document.getElementById('dates-container');
+      const rows = container.getElementsByClassName('day-row');
+
+      for (let row of rows) {
+        const cb = row.querySelector('input[type="checkbox"]');
+        if (cb.checked) {
+          // ↓修正：innerText だとHTML上のスペースが消えてしまうので、textContentに変更
+          const label = row.querySelector('.day-label').textContent;
+          const status = row.querySelector('input[type="radio"]:checked').value;
+          result += `  ${label} ${status}\n`;
+        }
+      }
+
+      document.getElementById('output').value = result;
+    }
+
+    function copyText() {
+      const output = document.getElementById('output');
+      if(output.value === "") return;
+      output.select();
+      document.execCommand('copy');
+      
+      const btn = document.querySelectorAll('.actions button')[1];
+      const originalText = btn.innerText;
+      btn.innerText = "コピーしました！";
+      setTimeout(() => btn.innerText = originalText, 2000);
+    }
+
+    window.onload = renderDays;
+  </script>
+</body>
+</html>
