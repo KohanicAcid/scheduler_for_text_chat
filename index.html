@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>予定テキスト生成ツール</title>
 <style>
   body { 
@@ -9,6 +10,7 @@
     padding: 20px; 
     max-width: 600px; 
     margin: 0 auto;
+    box-sizing: border-box;
   }
   .controls { 
     margin-bottom: 15px; 
@@ -31,6 +33,11 @@
     margin-right: 10px;
   }
   button:hover { background-color: #0056b3; }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+  }
   
   #dates-container {
     margin-bottom: 20px; 
@@ -43,6 +50,7 @@
   .day-row { 
     display: flex; 
     align-items: center; 
+    flex-wrap: wrap;
     padding: 8px 5px; 
     border-bottom: 1px solid #f1f1f1; 
   }
@@ -50,7 +58,7 @@
   .day-row:hover { background-color: #f8f9fa; }
   
   .day-label { 
-    width: 110px;   /* 全角文字6文字ぶんに合わせて拡張 */
+    width: 110px;
     font-size: 16px;
   }
   .day-checkbox { 
@@ -76,6 +84,35 @@
     border-radius: 8px;
     border: 1px solid #ccc;
   }
+
+  /* スマホ向け */
+  @media (max-width: 480px) {
+    body {
+      padding: 12px;
+    }
+    .actions {
+      flex-direction: column;
+    }
+    .actions button {
+      width: 100%;
+      margin-right: 0;
+      padding: 12px;
+    }
+    .status-radios label {
+      margin-right: 10px;
+      font-size: 14px;
+    }
+
+    .status-radios {
+      width: 100%;
+      padding: 4px 0 4px 110px;
+      box-sizing: border-box;
+    }
+    textarea {
+      font-size: 14px;
+      height: 200px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -89,7 +126,7 @@
   <div id="dates-container"></div>
 
   <div class="actions">
-    <button onclick="generate()">テキスト作成 👇</button>
+    <button onclick="generate()">テキスト作成</button>
     <button onclick="copyText()" style="background-color: #28a745;">クリップボードにコピー</button>
   </div>
   
@@ -98,10 +135,6 @@
   <script>
     const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
-    // 日付を全角2文字に変換する
-    // 1桁の場合は 全角スペース＋全角数字、2桁の場合は 全角数字×2
-    // 例: 1 → "　１"、15 → "１５"
-    // 全角スペース・全角数字はいずれも同じ文字幅なので、LINEでも揃う
     function toFullWidthDay(d) {
       const fw = ['０','１','２','３','４','５','６','７','８','９'];
       if (d < 10) return '\u3000' + fw[d];
@@ -173,11 +206,9 @@
       for (let row of rows) {
         const cb = row.querySelector('input[type="checkbox"]');
         if (cb.checked) {
-          // ラベルの textContent は toFullWidthDay で作成済みなのでそのまま使う
-          // 例: "　１（月）" / "１５（金）"
+
           const label = row.querySelector('.day-label').textContent;
           const status = row.querySelector('input[type="radio"]:checked').value;
-          // 先頭に全角スペースでインデント
           result += `　${label} ${status}\n`;
         }
       }
@@ -197,7 +228,12 @@
       setTimeout(() => btn.innerText = originalText, 2000);
     }
 
-    window.onload = renderDays;
+    window.onload = () => {
+      const today = new Date();
+      document.getElementById('year').value = today.getFullYear();
+      document.getElementById('month').value = today.getMonth() + 1;
+      renderDays();
+    };
   </script>
 </body>
 </html>
