@@ -50,10 +50,8 @@
   .day-row:hover { background-color: #f8f9fa; }
   
   .day-label { 
-    width: 90px; 
-    font-family: monospace; 
+    width: 110px;   /* 全角文字6文字ぶんに合わせて拡張 */
     font-size: 16px;
-    white-space: pre; /* ←修正：スペースを無視せずにそのまま表示する */
   }
   .day-checkbox { 
     margin-right: 20px; 
@@ -100,6 +98,16 @@
   <script>
     const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
+    // 日付を全角2文字に変換する
+    // 1桁の場合は 全角スペース＋全角数字、2桁の場合は 全角数字×2
+    // 例: 1 → "　１"、15 → "１５"
+    // 全角スペース・全角数字はいずれも同じ文字幅なので、LINEでも揃う
+    function toFullWidthDay(d) {
+      const fw = ['０','１','２','３','４','５','６','７','８','９'];
+      if (d < 10) return '\u3000' + fw[d];
+      return fw[Math.floor(d / 10)] + fw[d % 10];
+    }
+
     function renderDays() {
       const y = parseInt(document.getElementById('year').value);
       const m = parseInt(document.getElementById('month').value);
@@ -111,14 +119,13 @@
       while (date.getMonth() === m - 1) {
         const d = date.getDate();
         const w = weekdays[date.getDay()];
-        const dayStr = d.toString().padStart(2, ' ');
 
         const row = document.createElement('div');
         row.className = 'day-row';
 
         const label = document.createElement('div');
         label.className = 'day-label';
-        label.innerText = `${dayStr}（${w}）`;
+        label.textContent = `${toFullWidthDay(d)}（${w}）`;
 
         const cbWrapper = document.createElement('label');
         cbWrapper.className = 'day-checkbox';
@@ -156,10 +163,9 @@
     }
 
     function generate() {
-      const y = parseInt(document.getElementById('year').value);
       const m = parseInt(document.getElementById('month').value);
       const name = document.getElementById('name').value;
-      let result = `活動参加予定（${name},${m}月）\n\n`; // コハクさんの変更を反映
+      let result = `活動参加予定（${name},${m}月）\n\n`;
 
       const container = document.getElementById('dates-container');
       const rows = container.getElementsByClassName('day-row');
@@ -167,10 +173,12 @@
       for (let row of rows) {
         const cb = row.querySelector('input[type="checkbox"]');
         if (cb.checked) {
-          // ↓修正：innerText だとHTML上のスペースが消えてしまうので、textContentに変更
+          // ラベルの textContent は toFullWidthDay で作成済みなのでそのまま使う
+          // 例: "　１（月）" / "１５（金）"
           const label = row.querySelector('.day-label').textContent;
           const status = row.querySelector('input[type="radio"]:checked').value;
-          result += `  ${label} ${status}\n`;
+          // 先頭に全角スペースでインデント
+          result += `　${label} ${status}\n`;
         }
       }
 
