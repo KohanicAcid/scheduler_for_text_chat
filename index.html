@@ -126,7 +126,7 @@
   <div id="dates-container"></div>
 
   <div class="actions">
-    <button onclick="generate()">テキスト作成</button>
+    <button onclick="generate()">テキスト作成 👇</button>
     <button onclick="copyText()" style="background-color: #28a745;">クリップボードにコピー</button>
   </div>
   
@@ -135,10 +135,13 @@
   <script>
     const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
-    function toFullWidthDay(d) {
-      const fw = ['０','１','２','３','４','５','６','７','８','９'];
-      if (d < 10) return '\u3000' + fw[d];
-      return fw[Math.floor(d / 10)] + fw[d % 10];
+    // UI表示用：半角数字・右揃え（1桁は半角スペースでパディング）
+    function formatDayUI(d) {
+      return d.toString().padStart(2, ' ');
+    }
+    // テキスト出力用：半角数字・ゼロ埋め
+    function formatDayText(d) {
+      return d.toString().padStart(2, '0');
     }
 
     function renderDays() {
@@ -158,7 +161,9 @@
 
         const label = document.createElement('div');
         label.className = 'day-label';
-        label.textContent = `${toFullWidthDay(d)}（${w}）`;
+        label.style.whiteSpace = 'pre';
+        label.style.fontFamily = 'monospace';
+        label.textContent = `${formatDayUI(d)}（${w}）`;
 
         const cbWrapper = document.createElement('label');
         cbWrapper.className = 'day-checkbox';
@@ -207,9 +212,12 @@
         const cb = row.querySelector('input[type="checkbox"]');
         if (cb.checked) {
 
-          const label = row.querySelector('.day-label').textContent;
+          const rawLabel = row.querySelector('.day-label').textContent.trim();
+          const dayNum = parseInt(rawLabel);
+          const wMatch = rawLabel.match(/（.）/)[0];
+          const label = `${formatDayText(dayNum)}${wMatch}`;
           const status = row.querySelector('input[type="radio"]:checked').value;
-          result += ` ${label} ${status}\n`;
+          result += `${label} ${status}\n`;
         }
       }
 
